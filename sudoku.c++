@@ -56,4 +56,144 @@ public:
         column_used_[j] ^= (1 << digit);
         block_used_[(i / 3) * 3 + j / 3] ^= (1 << digit);
     }
+
+    vector<Board> SolveSudoku(Board board)
+    {
+        init_state();
+        for (int i = 0; i < N; i++)
+        {
+            for (int j = 0; j < N; j++)
+            {
+                if (board[i][j] == '$')
+                {
+                    spaces_.push_back(pair<int, int>(i, j));
+                }
+                else
+                {
+                    int digit = board[i][j] - '1';
+                    flip(i, j, digit);
+                }
+            }
+        }
+        DFS(board, 0);
+        return result_;
+    }
+
+    //从记录的第pos个挖空处开始递归挖空向量，直到递归结束。
+    void DFS(Board& board, int pos)
+    {
+        if (pos == spaces_.size())
+        {
+            add_result(board);
+            return;
+        }
+        int i = spaces_[pos].first;
+        int j = spaces_[pos].second;
+        //mask是记录了第i行、j列以及该空对应的3*3块所能被允许的填空的值（以位记录，例mask==(二进制)10000，则该空能填5）
+        int mask = ~(row_used_[i] | column_used_[j] | block_used_[(i / 3) * 3 + j / 3]) & 0x1ff;
+        int digit = 0;
+        while (mask)
+        {
+            if (mask & 1)
+            {
+                flip(i, j, digit);
+                board[i][j] = '1' + digit;
+                DFS(board, pos + 1);
+                //每次递归完要再一次取反，恢复上次递归前原状
+                flip(i, j, digit);
+            }
+            mask = mask >> 1;
+            digit++;
+        }
+    }
+
+
+    //打印出所有可能的结果
+    void get_result()
+    {
+        for (size_t i = 0; i < result_.size(); i++)
+        {
+            Board board = result_[i];
+            PrintBoard(board);
+        }
+    }
+
+    //检查board上的数据分布是否合法
+    bool CheckBoard(Board& board)
+    {
+        init_state();
+        for (int i = 0; i < 9; i++)
+        {
+            for (int j = 0; j < 9; j++)
+            {
+                if (board[i][j] != '$')
+                {
+                    int digit = board[i][j] - '1';
+                    if ((row_used_[i] | column_used_[j] | block_used_[(i / 3) * 3 + j / 3]) & (1 << digit))
+                    {
+                        return false;
+                    }
+                    flip(i, j, digit);
+                }
+            }
+        }
+        return true;
+    }
+
+    //形式化打印棋盘
+    void PrintBoard(Board& board)
+    {
+        for (int i = 0; i < board.size(); i++)
+        {
+            for (int j = 0; j < board[i].size(); j++)
+            {
+                cout << board[i][j] << " ";
+            }
+            cout << "\n";
+        }
+    }
 };
+
+char my_data[9][9] = {
+    {'.', '4', '.', '.', '7', '.', '.', '2', '8'},
+    {'.', '.', '.', '.', '.', '.', '9', '.', '.'},
+    {'3', '.', '.', '.', '.', '.', '.', '5', '7'},
+    {'.', '9', '4', '.', '.', '.', '8', '.', '.'},
+    {'7', '.', '.', '8', '3', '.', '.', '.', '.'},
+    {'.', '.', '.', '6', '.', '4', '.', '.', '5'},
+    {'.', '.', '9', '1', '.', '.', '.', '.', '.'},
+    {'.', '.', '1', '.', '2', '.', '4', '6', '.'},
+    {'.', '8', '3', '.', '.', '6', '5', '7', '.'} };
+
+int test()
+{
+    int right = 0;
+    SudokuPlayer player;
+    vector<vector<char> > board(N, vector<char>(N, '.'));
+
+    for (int i = 0; i < board.size(); i++)
+    {
+        for (int j = 0; j < board[i].size(); j++)
+        {
+            if (my_data[i][j] == '.')
+                board[i][j] = '$';
+            else
+                board[i][j] = my_data[i][j];
+        }
+    }
+    bool check = player.CheckBoard(board);
+    if (check) {
+        cout << "checked" << endl;
+        right = 1;
+    }
+
+    player.SolveSudoku(board);
+    player.get_result();
+
+    cout << endl;
+    return right;
+}
+int main(){
+    test();
+    return 0;
+}
