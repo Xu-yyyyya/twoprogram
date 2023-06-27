@@ -7,7 +7,7 @@
 #include <fstream>
 #include <map>
 #include <io.h>
-
+#include <unistd.h>
 using namespace std;
 
 
@@ -239,6 +239,93 @@ void writeFile(vector<Board> boards, ofstream& f)
         f << "------- " << k << " -------" << endl;
     }
 }
+
+map<char, string> MyParse(int argc, char* argv[])
+{
+    map<char, string> params;
+    int compeleteBoardCount, gameNumber, gameLevel;
+    vector<int> range;
+    string inputFile;
+    char opt = 0;
+    int countU = 0;
+    while ((opt = getopt(argc, argv, "c:s:n:m:r:u")) != -1)
+    {
+        char* p1 = new char[20];
+        switch (opt)
+        {
+        case 'c':
+            compeleteBoardCount = atoi(optarg);
+            if (compeleteBoardCount < 1 || compeleteBoardCount > 1000000)
+            {
+                printf("生成数独终盘数量范围在1～1000000之间\n");
+                exit(0);
+            }
+            params[opt] = string(optarg);
+            break;
+        case 's':
+            inputFile = string(optarg);
+            if (_access(optarg, 0) == -1)
+            {
+                printf("file does not exist\n");
+                exit(0);
+            }
+            params[opt] = string(optarg);
+            break;
+        case 'n':
+            gameNumber = atoi(optarg);
+            if (gameNumber < 1 || gameNumber > 10000)
+            {
+                printf("生成数独游戏数量范围在1～10000之间\n");
+                exit(0);
+            }
+            params[opt] = string(optarg);
+            break;
+        case 'm':
+            gameLevel = atoi(optarg);
+            if (gameLevel < 1 || gameLevel > 3)
+            {
+                printf("生成游戏难度的范围在1～3之间\n");
+                exit(0);
+            }
+            params[opt] = string(optarg);
+            break;
+        case 'r':
+            char* p;
+            
+            strcpy(p1, optarg);
+            p = strtok(p1, "~");
+            while (p)
+            {
+                range.push_back(atoi(p));
+                p = strtok(NULL, "~");
+            }
+            if (range.size() != 2)
+            {
+                printf("请输入一个范围参数\n");
+                exit(0);
+            }
+            if ((range[0] >= range[1]) || range[0] < 20 || range[1] > 55)
+            {
+                printf("请输入合法范围20～55\n");
+                exit(0);
+            }
+            params[opt] = string(optarg);
+            break;
+        case 'u':
+            params[opt] = string();
+            countU++;
+            if (countU >=2)
+                goto FLAG;
+            break;
+        default:
+            printf("请输入合法参数\n");
+            exit(0);
+            break;
+        }
+    }
+ FLAG:   return params;
+}
+
 int main(){
     test();
     return 0;
