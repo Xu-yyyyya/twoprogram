@@ -152,6 +152,111 @@ public:
             cout << "\n";
         }
     }
+    //生成数独终盘，并从中挖去 digCount 个数（中间九宫格矩阵变换法）
+    Board GenerateBoard(int digCount)
+    {
+        vector<vector<char> > board(N, vector<char>(N, '$'));
+        // 生成0-8的数，位置随机
+        vector<int> row = getRand9();
+        for (int i = 0; i < 3; i++)
+        {
+            board[3][static_cast<std::vector<char, std::allocator<char>>::size_type>(i) + 3] = row[i] + '1';
+            board[4][static_cast<std::vector<char, std::allocator<char>>::size_type>(i) + 3] = row[static_cast<std::vector<int, std::allocator<int>>::size_type>(i) + 3] + '1';
+            board[5][static_cast<std::vector<char, std::allocator<char>>::size_type>(i) + 3] = row[static_cast<std::vector<int, std::allocator<int>>::size_type>(i) + 6] + '1';
+        }
+        // 以下四个步骤就是上面的矩阵变换
+        CopySquare(board, 3, 3, true);
+        CopySquare(board, 3, 3, false);
+        CopySquare(board, 3, 0, false);
+        CopySquare(board, 3, 6, false);
+
+        while (digCount)
+        {
+            int x = rand() % 9;
+            int y = rand() % 9;
+            if (board[x][y] == '$')
+                continue;
+            char tmp = board[x][y];
+            board[x][y] = '$';
+
+            SolveSudoku(board);
+            if (result_.size() == 1)
+            {
+                digCount--;
+            }
+            else
+            {
+                board[x][y] = tmp;
+            }
+        }
+        // printBoard(board);
+        // cout << "spaces " << player.spaces.size() << "\n";
+        if (!CheckBoard(board))
+        {
+            cout << "wrong board" << endl;
+        }
+
+        return board;
+    }
+
+    // 获取包含0-8的随机数组
+    vector<int> getRand9()
+    {
+        vector<int> result;
+        int digit = 0;
+        while (result.size() != 9)
+        {
+            int num = rand() % 9;
+            if ((1 << num) & digit)
+            {
+                continue;
+            }
+            else
+            {
+                result.push_back(num);
+                digit ^= (1 << num);
+            }
+        }
+        return result;
+    }
+
+    //矩阵变换 将左上角坐标(src_x,src_y)的3x3矩阵进行列扩展或者行扩展。isRow 为是否是行扩展
+    void CopySquare(Board& board, int src_x, int src_y, bool isRow)
+    {//行列变换只有201/120两种
+        int rand_tmp = rand() % 2 + 1;
+        int order_first[3] = { 1, 2, 0 };
+        int order_second[3] = { 2, 0, 1 };
+        if (rand_tmp == 2)
+        {
+            order_first[0] = 2;
+            order_first[1] = 0;
+            order_first[2] = 1;
+            order_second[0] = 1;
+            order_second[1] = 2;
+            order_second[2] = 0;
+        }
+        for (int i = 0; i < 3; i++)
+        {
+            if (isRow)
+            {
+                board[src_x][i] = board[static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(src_x) + order_first[0]][static_cast<std::vector<char, std::allocator<char>>::size_type>(src_y) + i];
+                board[static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(src_x) + 1][i] = board[static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(src_x) + order_first[1]][static_cast<std::vector<char, std::allocator<char>>::size_type>(src_y) + i];
+                board[static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(src_x) + 2][i] = board[static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(src_x) + order_first[2]][static_cast<std::vector<char, std::allocator<char>>::size_type>(src_y) + i];
+                board[src_x][static_cast<std::vector<char, std::allocator<char>>::size_type>(i) + 6] = board[static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(src_x) + order_second[0]][static_cast<std::vector<char, std::allocator<char>>::size_type>(src_y) + i];
+                board[static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(src_x) + 1][static_cast<std::vector<char, std::allocator<char>>::size_type>(i) + 6] = board[static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(src_x) + order_second[1]][static_cast<std::vector<char, std::allocator<char>>::size_type>(src_y) + i];
+                board[static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(src_x) + 2][static_cast<std::vector<char, std::allocator<char>>::size_type>(i) + 6] = board[static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(src_x) + order_second[2]][static_cast<std::vector<char, std::allocator<char>>::size_type>(src_y) + i];
+            }
+            else
+            {
+                board[i][src_y] = board[static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(src_x) + i][static_cast<std::vector<char, std::allocator<char>>::size_type>(src_y) + order_first[0]];
+                board[i][static_cast<std::vector<char, std::allocator<char>>::size_type>(static_cast<std::vector<char, std::allocator<char>>::size_type>(src_y)) + 1] = board[static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(src_x) + i][static_cast<std::vector<char, std::allocator<char>>::size_type>(src_y) + order_first[1]];
+                board[i][static_cast<std::vector<char, std::allocator<char>>::size_type>(src_y) + 2] = board[static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(src_x)) + i][static_cast<std::vector<char, std::allocator<char>>::size_type>(src_y) + order_first[2]];
+                board[static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(i) + 6][src_y] = board[static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(src_x)) + i][static_cast<std::vector<char, std::allocator<char>>::size_type>(src_y) + order_second[0]];
+                board[static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(i)) + 6][static_cast<std::vector<char, std::allocator<char>>::size_type>(src_y) + 1] = board[static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(src_x) + i][static_cast<std::vector<char, std::allocator<char>>::size_type>(src_y) + order_second[1]];
+                board[static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(i) + 6][static_cast<std::vector<char, std::allocator<char>>::size_type>(src_y) + 2] = board[static_cast<std::vector<std::vector<char, std::allocator<char>>, std::allocator<std::vector<char, std::allocator<char>>>>::size_type>(src_x) + i][static_cast<std::vector<char, std::allocator<char>>::size_type>(src_y) + order_second[2]];
+            }
+        }
+    }
 };
 
 char my_data[9][9] = {
