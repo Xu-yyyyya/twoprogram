@@ -1,13 +1,17 @@
-#include "getopt.h"
-#include <iostream>
-#include <vector>
-#include <utility>
-#include <stdlib.h>
-#include <time.h>
-#include <fstream>
-#include <map>
-#include <io.h>
-#include <unistd.h>
+#define _CRT_SECURE_NO_WARNINGS
+//Author：Xu Yuang&Duan Chenrui
+//
+// 
+//This brief piece of code is about to achive the little sudoku games,which contains how to get the final situations 
+//and how to get the initial boards.Also it has the DFS methods to culculate a specify sukodu game. 
+// 
+
+
+
+#include "sudotest.h"
+
+
+
 using namespace std;
 
 
@@ -152,6 +156,7 @@ public:
             cout << "\n";
         }
     }
+
     //生成数独终盘，并从中挖去 digCount 个数（中间九宫格矩阵变换法）
     Board GenerateBoard(int digCount)
     {
@@ -298,6 +303,7 @@ int test()
     cout << endl;
     return right;
 }
+
 vector<Board> readFile(string filePath)
 {
     ifstream infile;
@@ -345,6 +351,7 @@ void writeFile(vector<Board> boards, ofstream& f)
     }
 }
 
+// 解析输入参数
 map<char, string> MyParse(int argc, char* argv[])
 {
     map<char, string> params;
@@ -431,7 +438,141 @@ map<char, string> MyParse(int argc, char* argv[])
  FLAG:   return params;
 }
 
-int main(){
-    test();
+void generateGame(int gameNumber, int gameLevel, vector<int> digCount, ofstream& outfile, SudokuPlayer& player)
+{
+    for (int i = 0; i < gameNumber; i++)
+    {
+        int cnt = 0;
+        if (digCount.size() == 1)
+        {
+            cnt = digCount[0];
+        }
+        else
+        {
+            cnt = rand() % (digCount[1] - digCount[0] + 1) + digCount[0];
+        }
+        Board b = player.GenerateBoard(cnt);
+        vector<Board> bs;
+        bs.push_back(b);
+        writeFile(bs, outfile);
+    }
+    outfile.close();
+}
+
+
+int RunMySudoku(int argc, char* argv[]) {
+    srand((unsigned)time(NULL));
+    SudokuPlayer player;
+
+    map<char, string> params = MyParse(argc, argv);
+    map<char, string>::iterator it, tmp;
+
+    int opt = 0;
+
+    vector<int> range;
+    int gameNumber;
+    int gameLevel = 0;
+    int solution_count = 0;
+
+    vector<Board> boards;
+    ofstream outfile;
+
+    it = params.begin();
+    while (it != params.end())
+    {
+        switch (it->first)
+        {
+        case 'c':
+            outfile.open("game.txt", ios::out | ios::trunc);
+            range.push_back(0);
+            generateGame(atoi(it->second.c_str()), 0, range, outfile, player);
+            range.clear();
+            break;
+
+        case 's':
+            outfile.open("sudoku.txt", ios::out | ios::trunc);
+            boards = readFile(it->second);
+            for (int i = 0; i < boards.size(); i++)
+            {
+                vector<Board> result = player.SolveSudoku(boards[i]);
+                writeFile(result, outfile);
+            }
+            outfile.close();
+            break;
+
+        case 'n':
+        case 'm':
+        case 'r':
+        case 'u':
+            tmp = params.find('n');
+            if (tmp == params.end())
+            {
+                printf("缺少参数 n \n");
+                exit(0);
+            }
+
+            gameNumber = atoi(tmp->second.c_str());
+
+            
+
+            tmp = params.find('m');
+            if (tmp != params.end())
+            {
+                gameLevel = atoi(tmp->second.c_str());
+            }
+
+            tmp = params.find('r');
+            if (tmp != params.end())
+            {
+                char* p;
+                char* pc = new char[100];
+                strcpy(pc, tmp->second.c_str());
+                p = strtok(pc, "~");
+                while (p)
+                {
+                    range.push_back(atoi(p));
+                    p = strtok(NULL, "~");
+                }
+            }
+            else
+            {
+                // 根据不同级别采取挖空数量不同
+                if (gameLevel == 1)
+                {
+                    range.push_back(20);
+                    range.push_back(30);
+                }
+                else if (gameLevel == 2)
+                {
+                    range.push_back(30);
+                    range.push_back(40);
+                }
+                else if (gameLevel == 3)
+                {
+                    range.push_back(40);
+                    range.push_back(55);
+                }
+                else
+                {
+                    range.push_back(20);
+                    range.push_back(55);
+                }
+            }
+
+            outfile.open("game.txt", ios::out | ios::trunc);
+            generateGame(gameNumber, gameLevel, range, outfile, player);
+            range.clear();
+            break;
+        }
+        // cout << it->first << ' ' << it->second << endl;
+        it++;
+    }
+    return 0;
+}
+
+int main(int argc, char* argv[])
+{
+    RunMySudoku(argc, argv);
+
     return 0;
 }
